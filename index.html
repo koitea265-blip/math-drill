@@ -1,0 +1,467 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>ポップ・マス・チャレンジ！</title>
+    <!-- 子供向けの可愛いフォントをGoogle Fontsから読み込み -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Mochiy+Pop+One&display=swap" rel="stylesheet">
+    
+    <style>
+        /* --- CSS: デザイン設定 --- */
+        :root {
+            --primary: #4ECDC4; /* ミントグリーン */
+            --secondary: #FF6B6B; /* パステルレッド */
+            --accent: #FFE66D; /* パステルイエロー */
+            --dark: #292F36;
+            --light: #F7FFF7;
+            --font-main: 'Mochiy Pop One', sans-serif;
+        }
+
+        * {
+            box-sizing: border-box;
+            touch-action: manipulation; /* スマホでのダブルタップ拡大防止 */
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: var(--font-main);
+            background-color: var(--accent);
+            color: var(--dark);
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+        }
+
+        /* アプリ全体のコンテナ */
+        #app-container {
+            width: 100%;
+            max-width: 500px;
+            height: 100%;
+            max-height: 900px;
+            background-color: var(--light);
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+
+        @media (min-width: 501px) {
+            #app-container {
+                height: 90vh;
+                border-radius: 20px;
+                border: 4px solid var(--dark);
+            }
+        }
+
+        /* 画面共通設定 */
+        .screen {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            transition: opacity 0.3s;
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            background: var(--light);
+            z-index: 10;
+        }
+
+        .hidden {
+            display: none !important;
+            opacity: 0;
+            z-index: 0;
+        }
+
+        /* タイトル画面 */
+        h1 {
+            font-size: 2.5rem;
+            color: var(--secondary);
+            text-shadow: 2px 2px 0px var(--dark);
+            margin-bottom: 30px;
+            text-align: center;
+            line-height: 1.2;
+        }
+
+        .menu-btn {
+            background-color: var(--primary);
+            color: white;
+            border: 3px solid var(--dark);
+            border-radius: 15px;
+            padding: 15px 30px;
+            font-size: 1.2rem;
+            font-family: var(--font-main);
+            margin: 10px;
+            width: 80%;
+            cursor: pointer;
+            box-shadow: 4px 4px 0px var(--dark);
+            transition: transform 0.1s;
+        }
+
+        .menu-btn:active {
+            transform: translate(2px, 2px);
+            box-shadow: 2px 2px 0px var(--dark);
+        }
+
+        /* プレイ画面 */
+        .top-bar {
+            width: 100%;
+            display: flex;
+            justify-content: space-between;
+            padding: 10px 20px;
+            font-size: 1.2rem;
+            background: var(--primary);
+            color: white;
+            border-bottom: 3px solid var(--dark);
+            position: absolute;
+            top: 0;
+        }
+
+        .problem-area {
+            font-size: 4rem;
+            margin: 40px 0 20px 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 120px;
+        }
+
+        .answer-box {
+            width: 200px;
+            height: 80px;
+            border: 4px solid var(--dark);
+            border-radius: 15px;
+            background: white;
+            font-size: 3rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 20px;
+        }
+
+        /* キーパッド */
+        .keypad {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            width: 100%;
+            padding: 10px;
+            max-width: 400px;
+        }
+
+        .key-btn {
+            background-color: white;
+            border: 2px solid var(--dark);
+            border-radius: 10px;
+            padding: 15px;
+            font-size: 1.8rem;
+            font-family: var(--font-main);
+            cursor: pointer;
+            box-shadow: 0 4px 0 rgba(0,0,0,0.1);
+        }
+
+        .key-btn:active {
+            background-color: #eee;
+            transform: translateY(2px);
+            box-shadow: 0 2px 0 rgba(0,0,0,0.1);
+        }
+
+        .key-enter {
+            background-color: var(--secondary);
+            color: white;
+        }
+        
+        .key-clear {
+            background-color: #ccc;
+        }
+
+        /* フィードバックアニメーション */
+        @keyframes pop {
+            0% { transform: scale(0.8); opacity: 0; }
+            50% { transform: scale(1.2); opacity: 1; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+
+        @keyframes shake {
+            0% { transform: translateX(0); }
+            25% { transform: translateX(-10px); }
+            50% { transform: translateX(10px); }
+            75% { transform: translateX(-10px); }
+            100% { transform: translateX(0); }
+        }
+
+        .correct-anim {
+            color: var(--primary);
+            animation: pop 0.3s ease-out;
+        }
+
+        .wrong-anim {
+            color: var(--secondary);
+            animation: shake 0.4s ease-in-out;
+        }
+
+        /* 結果画面 */
+        .result-score {
+            font-size: 5rem;
+            color: var(--secondary);
+            margin: 20px;
+        }
+        
+        .message {
+            font-size: 1.5rem;
+            margin-bottom: 30px;
+        }
+
+    </style>
+</head>
+<body>
+
+    <div id="app-container">
+        <!-- 1. スタート画面 -->
+        <div id="start-screen" class="screen">
+            <h1>ポップ・マス<br>チャレンジ！</h1>
+            <p>レベルをえらんでね</p>
+            <button class="menu-btn" onclick="startGame('easy')">かんたん (たし・ひき)</button>
+            <button class="menu-btn" onclick="startGame('normal')">ふつう (かけ算・九九)</button>
+            <button class="menu-btn" onclick="startGame('hard')">むずかしい (わり算・ミックス)</button>
+        </div>
+
+        <!-- 2. プレイ画面 -->
+        <div id="game-screen" class="screen hidden">
+            <div class="top-bar">
+                <span id="timer">残り: 60秒</span>
+                <span id="score-display">スコア: 0</span>
+            </div>
+            
+            <div id="problem-display" class="problem-area">
+                <!-- ここに問題が表示されます -->
+            </div>
+
+            <div id="user-answer" class="answer-box">
+                <!-- ここに入力した数字が表示されます -->
+            </div>
+
+            <div class="keypad">
+                <button class="key-btn" onclick="inputNum(7)">7</button>
+                <button class="key-btn" onclick="inputNum(8)">8</button>
+                <button class="key-btn" onclick="inputNum(9)">9</button>
+                <button class="key-btn" onclick="inputNum(4)">4</button>
+                <button class="key-btn" onclick="inputNum(5)">5</button>
+                <button class="key-btn" onclick="inputNum(6)">6</button>
+                <button class="key-btn" onclick="inputNum(1)">1</button>
+                <button class="key-btn" onclick="inputNum(2)">2</button>
+                <button class="key-btn" onclick="inputNum(3)">3</button>
+                <button class="key-btn key-clear" onclick="clearInput()">C</button>
+                <button class="key-btn" onclick="inputNum(0)">0</button>
+                <button class="key-btn key-enter" onclick="checkAnswer()">OK</button>
+            </div>
+        </div>
+
+        <!-- 3. 結果画面 -->
+        <div id="result-screen" class="screen hidden">
+            <h1>しゅうりょう！</h1>
+            <div class="message" id="result-message">よくがんばったね！</div>
+            <div>あなたのスコア</div>
+            <div class="result-score" id="final-score">0</div>
+            <button class="menu-btn" onclick="goHome()">もういちど あそぶ</button>
+        </div>
+    </div>
+
+    <script>
+        /* --- JavaScript: アプリのロジック --- */
+        
+        let currentLevel = 'easy';
+        let score = 0;
+        let timeLeft = 60;
+        let timerInterval;
+        let currentAnswer = 0;
+        let inputString = "";
+
+        // 画面要素の取得
+        const startScreen = document.getElementById('start-screen');
+        const gameScreen = document.getElementById('game-screen');
+        const resultScreen = document.getElementById('result-screen');
+        const problemDisplay = document.getElementById('problem-display');
+        const answerDisplay = document.getElementById('user-answer');
+        const timerDisplay = document.getElementById('timer');
+        const scoreDisplay = document.getElementById('score-display');
+        const finalScoreDisplay = document.getElementById('final-score');
+        const resultMessage = document.getElementById('result-message');
+
+        // ゲーム開始処理
+        function startGame(level) {
+            currentLevel = level;
+            score = 0;
+            timeLeft = 60;
+            inputString = "";
+            
+            scoreDisplay.textContent = `スコア: ${score}`;
+            timerDisplay.textContent = `残り: ${timeLeft}秒`;
+            
+            // 画面切り替え
+            startScreen.classList.add('hidden');
+            resultScreen.classList.add('hidden');
+            gameScreen.classList.remove('hidden');
+
+            generateProblem();
+            
+            // タイマースタート
+            if (timerInterval) clearInterval(timerInterval);
+            timerInterval = setInterval(() => {
+                timeLeft--;
+                timerDisplay.textContent = `残り: ${timeLeft}秒`;
+                if (timeLeft <= 0) {
+                    endGame();
+                }
+            }, 1000);
+        }
+
+        // 問題作成ロジック
+        function generateProblem() {
+            let num1, num2, operator, symbol;
+
+            // レベルごとの問題生成ルール
+            if (currentLevel === 'easy') {
+                // 足し算・引き算 (答えが20以下)
+                operator = Math.random() > 0.5 ? '+' : '-';
+                if (operator === '+') {
+                    num1 = Math.floor(Math.random() * 10) + 1;
+                    num2 = Math.floor(Math.random() * 10) + 1;
+                    currentAnswer = num1 + num2;
+                } else {
+                    num1 = Math.floor(Math.random() * 10) + 5; // 引かれる数を大きめに
+                    num2 = Math.floor(Math.random() * (num1 - 1)) + 1; // 答えが負にならないように
+                    currentAnswer = num1 - num2;
+                }
+                symbol = operator;
+            } else if (currentLevel === 'normal') {
+                // 九九 (掛け算のみ)
+                operator = '*';
+                num1 = Math.floor(Math.random() * 9) + 1;
+                num2 = Math.floor(Math.random() * 9) + 1;
+                currentAnswer = num1 * num2;
+                symbol = '×';
+            } else {
+                // 難しい (割り算含むミックス)
+                const types = ['+', '-', '*', '/'];
+                operator = types[Math.floor(Math.random() * types.length)];
+                
+                if (operator === '+') {
+                    num1 = Math.floor(Math.random() * 50) + 10;
+                    num2 = Math.floor(Math.random() * 50) + 10;
+                    currentAnswer = num1 + num2;
+                    symbol = '+';
+                } else if (operator === '-') {
+                    num1 = Math.floor(Math.random() * 50) + 50;
+                    num2 = Math.floor(Math.random() * 40) + 10;
+                    currentAnswer = num1 - num2;
+                    symbol = '-';
+                } else if (operator === '*') {
+                    num1 = Math.floor(Math.random() * 12) + 2;
+                    num2 = Math.floor(Math.random() * 9) + 1;
+                    currentAnswer = num1 * num2;
+                    symbol = '×';
+                } else { // 割り算
+                    // 割り切れる数を作るために逆算する
+                    // 答え(2~9) * 割る数(2~9) = 割られる数
+                    let ans = Math.floor(Math.random() * 9) + 2;
+                    num2 = Math.floor(Math.random() * 9) + 2;
+                    num1 = ans * num2;
+                    currentAnswer = ans;
+                    symbol = '÷';
+                }
+            }
+
+            // HTML数式表示 (LaTeX風に見やすく)
+            problemDisplay.innerHTML = `${num1} <span style="color:var(--secondary); margin:0 10px;">${symbol}</span> ${num2} = ?`;
+            inputString = "";
+            updateAnswerDisplay();
+        }
+
+        // キーパッド入力処理
+        function inputNum(num) {
+            if (inputString.length < 4) { // 桁数制限
+                inputString += num;
+                updateAnswerDisplay();
+            }
+        }
+
+        function clearInput() {
+            inputString = "";
+            updateAnswerDisplay();
+        }
+
+        function updateAnswerDisplay() {
+            answerDisplay.textContent = inputString;
+        }
+
+        // 答え合わせ
+        function checkAnswer() {
+            if (inputString === "") return;
+            
+            const userVal = parseInt(inputString);
+            
+            if (userVal === currentAnswer) {
+                // 正解！
+                score += 10; // 基本点
+                // 残り時間ボーナスを入れるならここ
+                scoreDisplay.textContent = `スコア: ${score}`;
+                
+                // 正解アニメーション
+                problemDisplay.classList.remove('wrong-anim');
+                answerDisplay.style.borderColor = "var(--primary)";
+                answerDisplay.style.color = "var(--primary)";
+                
+                setTimeout(() => {
+                    answerDisplay.style.borderColor = "var(--dark)";
+                    answerDisplay.style.color = "var(--dark)";
+                    generateProblem();
+                }, 300);
+
+            } else {
+                // 不正解
+                answerDisplay.classList.add('wrong-anim');
+                answerDisplay.style.borderColor = "var(--secondary)";
+                
+                setTimeout(() => {
+                    answerDisplay.classList.remove('wrong-anim');
+                    answerDisplay.style.borderColor = "var(--dark)";
+                    clearInput();
+                }, 500);
+            }
+        }
+
+        // ゲーム終了処理
+        function endGame() {
+            clearInterval(timerInterval);
+            gameScreen.classList.add('hidden');
+            resultScreen.classList.remove('hidden');
+            finalScoreDisplay.textContent = score;
+
+            // スコアに応じたメッセージ
+            if (score >= 200) {
+                resultMessage.textContent = "すごい！天才だね！🏆";
+            } else if (score >= 100) {
+                resultMessage.textContent = "とってもいい感じ！✨";
+            } else {
+                resultMessage.textContent = "つぎはもっといけるよ！💪";
+            }
+        }
+
+        function goHome() {
+            resultScreen.classList.add('hidden');
+            startScreen.classList.remove('hidden');
+        }
+
+    </script>
+</body>
+</html>
